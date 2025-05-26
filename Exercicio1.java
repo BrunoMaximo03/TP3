@@ -438,7 +438,6 @@ public class Exercicio1 {
                 espetaculo.printShowComplete();
             }
         } while (!string.equalsIgnoreCase("FIM"));
-        scanner.close();
 
         int numero = scanner.nextInt(); // Valores a serem inseridos/removidos
 
