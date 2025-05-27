@@ -278,11 +278,7 @@ class Pilha {
 
 // classe main
 public class Exercicio09 {
-
-    static int tamanhoCatalogo = 0;
-    static int[] comparacoes = { 0 };
-    static int[] movimentacoes = { 0 };
-
+    
     static List<Show> catalogo = new ArrayList<>();
 
     public static void preencherCatalogo() {
@@ -312,11 +308,11 @@ public class Exercicio09 {
     public static void main(String[] args) {
         preencherCatalogo();
         Pilha pilha = new Pilha();
-        Scanner sc = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in);
         String entrada;
 
         // Leitura dos IDs e inserção na lista
-        while (!(entrada = sc.nextLine()).equals("FIM")) {
+        while (!(entrada = scanner.nextLine()).equals("FIM")) {
             for (Show s : catalogo) {
                 if (s.getShow_id().equals(entrada)) {
                     pilha.inserir(s.clone());
@@ -325,27 +321,37 @@ public class Exercicio09 {
             }
         }
 
-        long inicio = System.currentTimeMillis();
+        System.out.println("Informe quantos serão removidos ou inseridos");
+        int tamannhoManipulacaoPilha = scanner.nextInt();
+        scanner.nextLine(); // Limpar o buffer do scanner
 
-      
+        while(tamannhoManipulacaoPilha-- > 0) {
+            String operacao = scanner.nextLine();
+            if (operacao.equals("R")) {
+                try {
+                    Show removido = pilha.remover();
+                    System.out.println("(R) " + removido.getShow_id() + " ## " + removido.getTitle());
+                } catch (Exception e) {
+                    System.out.println("Erro ao remover: " + e.getMessage());
+                }
+            } else if (operacao.startsWith("I ")) {
+                String id = operacao.substring(2);
+                for (Show s : catalogo) {
+                    if (s.getShow_id().equals(id)) {
+                        pilha.inserir(s.clone());
+                        System.out.println("(I) " + s.getShow_id() + " ## " + s.getTitle());
+                        break;
+                    }
+                }
+            }
+        }
 
-        long fim = System.currentTimeMillis();
-
-        // Impressão dos elementos ordenados
+        /* Impressão dos elementos ordenados
        
         for (Show show : catalogo) {
             show.imprimir();
         }
-
-        // Gravação do log
-        try {
-            BufferedWriter log = new BufferedWriter(new FileWriter("matricula_quicksort.txt"));
-            log.write("850847\t" + comparacoes[0] + "\t" + movimentacoes[0] + "\t" + (fim - inicio) + "ms");
-            log.close();
-        } catch (IOException e) {
-            System.out.println("Erro ao gravar log: " + e.getMessage());
-        }
-
-        sc.close();
+        */ 
+        scanner.close();
     }
 }
