@@ -553,7 +553,7 @@ public class Exercicio08 {
         // Gravação do log
         try {
             BufferedWriter log = new BufferedWriter(new FileWriter("matricula_quicksort.txt"));
-            log.write("123456\t" + comparacoes[0] + "\t" + movimentacoes[0] + "\t" + (fim - inicio) + "ms");
+            log.write("850847\t" + comparacoes[0] + "\t" + movimentacoes[0] + "\t" + (fim - inicio) + "ms");
             log.close();
         } catch (IOException e) {
             System.out.println("Erro ao gravar log: " + e.getMessage());
