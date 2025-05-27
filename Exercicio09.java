@@ -282,7 +282,7 @@ public class Exercicio09 {
     static List<Show> catalogo = new ArrayList<>();
 
     public static void preencherCatalogo() {
-        String caminho = "disneyplus.csv";
+        String caminho = "/tmp/disneyplus.csv";
         try {
             BufferedReader br = new BufferedReader(new FileReader(caminho));
             br.readLine();
@@ -346,12 +346,10 @@ public class Exercicio09 {
             }
         }
 
-        /* Impressão dos elementos ordenados
-       
         for (Show show : catalogo) {
             show.imprimir();
         }
-        */ 
+         
         scanner.close();
     }
 }
