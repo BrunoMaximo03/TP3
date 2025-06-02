@@ -139,14 +139,15 @@ void read_csv(const char* caminho) {
         strcpy(registro->title, strlen(campos[2]) > 0 ? campos[2] : "NaN");
 
         split_list(strlen(campos[3]) > 0 ? campos[3] : "NaN", registro->director, &registro->director_count);
-        sort_list(registro->director, registro->director_count);
+        //sort_list(registro->director, registro->director_count);
+        //Saída do verde não está ordenada
 
         split_list(strlen(campos[4]) > 0 ? campos[4] : "NaN", registro->cast, &registro->cast_count);
         sort_list(registro->cast, registro->cast_count);
 
         split_list(strlen(campos[5]) > 0 ? campos[5] : "NaN", registro->country, &registro->country_count);
-        sort_list(registro->country, registro->country_count);
-
+        //sort_list(registro->country, registro->country_count);
+        //Saída do verde não está ordenada
         strcpy(registro->date, strlen(campos[6]) > 0 ? campos[6] : "March 1, 1900");
         registro->release_year = strlen(campos[7]) > 0 ? atoi(campos[7]) : -1;
 
