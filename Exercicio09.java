@@ -3,7 +3,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 class Show {
-    // atributos
+    //atributos
     private String show_id;
     private String type;
     private String title;
@@ -16,16 +16,13 @@ class Show {
     private String duration;
     private String[] listed_in;
 
-    public Show() { // contrutor padrão
+    public Show() { //contrutor padrão
         this.show_id = this.type = this.title = this.director = this.country = this.rating = this.duration = "NaN";
         this.cast = new String[0];
         this.listed_in = new String[0];
         this.date_added = null;
         this.release_year = -1;
     }
-
-    // nos sets e nos gets e sets ja posso tratar o ID arrancando o "s" e
-    // tranformando o id em int.
 
     public String getShow_id() {
         return show_id;
@@ -115,26 +112,26 @@ class Show {
         this.listed_in = listed_in;
     }
 
-    public void readCSV(String linhaCSV) {
+    public void lerLinha(String linhaCSV) {
         try {
             List<String> camposSeparados = new ArrayList<>();
-            StringBuilder bufferCampo = new StringBuilder();
-            boolean dentroAspas = false;
+            StringBuilder campoAtual = new StringBuilder();
+            boolean entreAspas = false;
 
             for (int i = 0; i < linhaCSV.length(); i++) {
-                char caractere = linhaCSV.charAt(i);
+                char ch = linhaCSV.charAt(i);
 
-                if (caractere == '"') {
-                    dentroAspas = !dentroAspas;
-                } else if (caractere == ',' && !dentroAspas) {
-                    camposSeparados.add(bufferCampo.toString().trim());
-                    bufferCampo.setLength(0);
+                if (ch == '"') {
+                    entreAspas = !entreAspas;
+                } else if (ch == ',' && !entreAspas) {
+                    camposSeparados.add(campoAtual.toString().trim());
+                    campoAtual.setLength(0);
                 } else {
-                    bufferCampo.append(caractere);
+                    campoAtual.append(ch);
                 }
             }
 
-            camposSeparados.add(bufferCampo.toString().trim());
+            camposSeparados.add(campoAtual.toString().trim());
 
             String[] campos = camposSeparados.toArray(new String[0]);
 
@@ -142,7 +139,7 @@ class Show {
             this.type = campos[1];
             this.title = campos[2].replace("\"", "");
             this.director = campos[3].isEmpty() ? "NaN" : campos[3];
-            this.cast = campos[4].isEmpty() ? new String[] { "NaN" } : campos[4].split(",\\s*");
+            this.cast = campos[4].isEmpty() ? new String[]{"NaN"} : campos[4].split(",\\s*");
             Arrays.sort(this.cast);
             this.country = campos[5].isEmpty() ? "NaN" : campos[5];
 
@@ -156,7 +153,7 @@ class Show {
             this.release_year = campos[7].isEmpty() ? -1 : Integer.parseInt(campos[7]);
             this.rating = campos[8].isEmpty() ? "NaN" : campos[8];
             this.duration = campos[9].isEmpty() ? "NaN" : campos[9];
-            this.listed_in = campos[10].isEmpty() ? new String[] { "NaN" } : campos[10].split(",\\s*");
+            this.listed_in = campos[10].isEmpty() ? new String[]{"NaN"} : campos[10].split(",\\s*");
             Arrays.sort(this.listed_in);
 
         } catch (Exception e) {
@@ -170,8 +167,8 @@ class Show {
         System.out.print("] ## " + country + " ## ");
 
         if (date_added != null) {
-            SimpleDateFormat Saida = new SimpleDateFormat("MMMM d, yyyy", Locale.US);
-            System.out.print(Saida.format(date_added));
+            SimpleDateFormat formatoSaida = new SimpleDateFormat("MMMM d, yyyy", Locale.US);
+            System.out.print(formatoSaida.format(date_added));
         } else {
             System.out.print("NaN");
         }
@@ -198,21 +195,54 @@ class Show {
     }
 }
 
+
+/**
+ * Celula (pilha, lista e fila dinamica)
+ * @author Max do Val Machado
+ * @version 2 01/2015
+ */
+class Celula {
+	public Show elemento; // Elemento inserido na celula.
+	public Celula prox; // Aponta a celula prox.
+
+	/**
+	 * Construtor da classe.
+	 */
+	public Celula() {
+		this(null);
+	}
+
+	/**
+	 * Construtor da classe.
+	 * @param elemento int inserido na celula.
+	 */
+	public Celula(Show elemento) {
+        this.elemento = elemento;
+        this.prox = null;
+	}
+}
+
+/**
+ * Pilha dinamica
+ * 
+ * @author Max do Val Machado
+ * @version 2 01/2015
+ */
 class Pilha {
-    private Celula topo;
+	private Celula topo;
 
-    public Pilha() {
-        topo = null;
-    }
+	public Pilha() {
+		topo = null;
+	}
 
-    public void inserir(Show x) {
+	public void inserir(Show x) {
 		Celula tmp = new Celula(x);
 		tmp.prox = topo;
 		topo = tmp;
 		tmp = null;
 	}
 
-    public Show remover() throws Exception {
+	public Show remover() throws Exception {
 		if (topo == null) {
 			throw new Exception("Erro ao remover!");
 		}
@@ -224,20 +254,25 @@ class Pilha {
 		return resp;
 	}
 
-    public int getTamanho() {
-        int tamanho = 0;
-        for(Celula i = topo; i != null; i = i.prox) {
-            tamanho++;
+	public void mostrar() {
+        int controle = 0;
+        for(Celula i = topo.prox; i != null; i = i.prox){
+            controle++;
         }
-        return tamanho;
-    }
-
-    public void mostrar() {
-		System.out.print("[ ");
 		for (Celula i = topo; i != null; i = i.prox) {
-			System.out.print(i.elemento + " ");
+            System.out.print("["+controle+"] ");
+            i.elemento.imprimir();
+            controle--;
 		}
-		System.out.println("] ");
+	}
+
+	public Show getMax() {
+		Show max = topo.elemento;
+		for (Celula i = topo.prox; i != null; i = i.prox) {
+			if (i.elemento.getRelease_year() > max.getRelease_year())
+				max = i.elemento;
+		}
+		return max;
 	}
 
 	public void mostraPilha() {
@@ -250,106 +285,83 @@ class Pilha {
 			System.out.println("" + i.elemento);
 		}
 	}
-
-
-    class Celula {
-        public Show elemento;
-        public Celula prox;
-
-        /**
-         * Construtor da classe.
-         */
-        public Celula() {
-            elemento = null;
-            prox = null;
-        }
-
-        /**
-         * Construtor da classe.
-         * 
-         * @param elemento Show é inserido na celula.
-         */
-        public Celula(Show elemento) {
-            this.elemento = elemento;
-            this.prox = null;
-        }
-    }
 }
 
-// classe main
-public class Exercicio09 {
-    
-    static List<Show> catalogo = new ArrayList<>();
 
-    public static void preencherCatalogo() {
-        String caminho = "/tmp/disneyplus.csv";
+public class Exercicio09 {
+    static List<Show> acervo = new ArrayList<>();
+
+    public static void carregarDadosCSV() {
+        String arquivo = "/tmp/disneyplus.csv";
         try {
-            BufferedReader br = new BufferedReader(new FileReader(caminho));
-            br.readLine();
+            BufferedReader leitor = new BufferedReader(new FileReader(arquivo));
+            leitor.readLine(); // ignora o cabeçalho
 
             String linha;
-            while ((linha = br.readLine()) != null) {
-                Show s = new Show(); 
-                s.readCSV(linha);
-                catalogo.add(s);
+            while ((linha = leitor.readLine()) != null) {
+                Show show = new Show();
+                show.lerLinha(linha);
+                acervo.add(show);
             }
 
-            br.close();
+            leitor.close();
         } catch (IOException e) {
             System.out.println("Erro ao ler arquivo: " + e.getMessage());
         }
     }
 
-    public static boolean isFim(String str) {
-        return str.equals("FIM");
+    public static boolean comandoFim(String entrada) {
+        return entrada.equals("FIM");
     }
 
-    // main principal
     public static void main(String[] args) {
-        preencherCatalogo();
+        carregarDadosCSV();
+        Scanner teclado = new Scanner(System.in);
+        String entrada = teclado.nextLine();
         Pilha pilha = new Pilha();
-        Scanner scanner = new Scanner(System.in);
-        String entrada;
 
-        // Leitura dos IDs e inserção na lista
-        while (!(entrada = scanner.nextLine()).equals("FIM")) {
-            for (Show s : catalogo) {
+        while (!comandoFim(entrada)) {
+            for (int i = 0; i < acervo.size(); i++) {
+                Show s = acervo.get(i);
                 if (s.getShow_id().equals(entrada)) {
-                    pilha.inserir(s.clone());
+                    try {
+                        pilha.inserir(s);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                     break;
                 }
             }
+            entrada = teclado.nextLine();
         }
 
-        System.out.println("Informe quantos serão removidos ou inseridos");
-        int tamannhoManipulacaoPilha = scanner.nextInt();
-        scanner.nextLine(); // Limpar o buffer do scanner
+        int numOperacoes = teclado.nextInt();
 
-        while(tamannhoManipulacaoPilha-- > 0) {
-            String operacao = scanner.nextLine();
-            if (operacao.equals("R")) {
-                try {
-                    Show removido = pilha.remover();
-                    System.out.println("(R) " + removido.getShow_id() + " ## " + removido.getTitle());
-                } catch (Exception e) {
-                    System.out.println("Erro ao remover: " + e.getMessage());
-                }
-            } else if (operacao.startsWith("I ")) {
-                String id = operacao.substring(2);
-                for (Show s : catalogo) {
-                    if (s.getShow_id().equals(id)) {
-                        pilha.inserir(s.clone());
-                        System.out.println("(I) " + s.getShow_id() + " ## " + s.getTitle());
+        for (int i = 0; i < numOperacoes; i++) {
+            entrada = teclado.next();
+            String codigo;
+            if (entrada.equals("I")) {
+                codigo = teclado.next();
+                Show encontrado = null;
+                for (int j = 0; j < acervo.size(); j++) {
+                    if (acervo.get(j).getShow_id().equals(codigo)) {
+                        encontrado = acervo.get(j);
                         break;
                     }
                 }
+                try {
+                    pilha.inserir(encontrado);
+                } catch (Exception e) {}
+            } else if (entrada.equals("R")) {
+                Show removido = null;
+                try {
+                    removido = pilha.remover();
+                } catch (Exception e) {}
+                System.out.println("(R) " + removido.getTitle());
             }
         }
 
-        for (Show show : catalogo) {
-            show.imprimir();
-        }
-         
-        scanner.close();
+        pilha.mostrar();
+        teclado.close();
     }
 }
