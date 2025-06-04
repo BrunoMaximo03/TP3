@@ -27,16 +27,12 @@ typedef struct {
     int listen_count;
 } Show;
 
-// Struct Celula
-typedef struct Celula
-{
-    Show elemento;
-    struct Celula *prox;
-} Celula;
-
-// LISTA PROPRIAMENTE DITA
-Celula *primeiro;
-Celula *ultimo;
+// Struct Lista Sequencial com alocação dinâmica
+typedef struct Lista {
+    Show** shows;
+    int tam; 
+    int n;  
+} Lista;
 
 Show shows[MAX_SHOWS];
 int show_count = 0;
@@ -184,168 +180,82 @@ bool isFim(char *str)
 }
 
 // Retorna o tamanho da lista
-int tamanho()
-{
-    int tamanho = 0;
-    Celula *i;
-    for (i = primeiro->prox; i != NULL; i = i->prox)
-    {
-        tamanho++;
-    }
-    return tamanho;
+// Métodos da Lista Sequencial dinâmica
+Lista* criarLista(int tam) {
+    Lista* lista = (Lista*)malloc(sizeof(Lista));
+    lista->tam = tam;
+    lista->shows = (Show**)malloc(tam * sizeof(Show*));
+    lista->n = 0;
+    return lista;
 }
 
-// Construtor Celula
-Celula *novaCelula(Show elemento)
-{
-    Celula *nova = (Celula *)malloc(sizeof(Celula));
-    nova->elemento = elemento;
-    nova->prox = NULL;
-    return nova;
+// Redimensiona a lista se necessário 
+void redimensionarLista(Lista* lista) {
+    lista->tam *= 2;
+    lista->shows = (Show**) realloc(lista->shows, lista->tam * sizeof(Show*));
 }
 
-// Cria a lista sem elementos
-void start()
-{
-    primeiro = novaCelula((Show){0});
-    ultimo = primeiro;
+// Insere início
+void inserirInicio(Lista* lista, Show* show) {
+    if (lista->n >= lista->tam) {
+        redimensionarLista(lista);
+    }
+    for (int i = lista->n; i > 0; i--)
+        lista->shows[i] = lista->shows[i - 1];
+    lista->shows[0] = show;
+    lista->n++;
 }
 
-// Inserir elemento no inicio da lista
-void inserirInicio(Show elemento)
-{
-    Celula *nova = novaCelula(elemento);
-    nova->prox = primeiro->prox;
-    primeiro->prox = nova;
-
-    if (ultimo == primeiro)
-    {
-        ultimo = nova;
+// Insere fim
+void inserirFim(Lista* lista, Show* show) {
+    if (lista->n >= lista->tam) {
+        redimensionarLista(lista);
     }
-    nova = NULL;
+    lista->shows[lista->n++] = show;
 }
 
-// Inserir elemento no final da lista
-void inserirFim(Show elemento)
-{
-    ultimo->prox = novaCelula(elemento);
-    ultimo = ultimo->prox;
+// Insere em qualquer posição
+void inserir(Lista* lista, Show* show, int pos) {
+    if (lista->n >= lista->tam) {
+        redimensionarLista(lista);
+    }
+    if (pos < 0 || pos > lista->n) return;
+    for (int i = lista->n; i > pos; i--)
+        lista->shows[i] = lista->shows[i - 1];
+    lista->shows[pos] = show;
+    lista->n++;
 }
 
-// Inserir elemento em uma posição específica
-void inserir(Show elemento, int posicao)
-{
-
-    int tam = tamanho();
-    if (posicao < 0 || posicao > tam)
-    {
-        printf("Erro ao inserir (posição inválida)!\n");
-        exit(1);
-    }
-    else if (posicao == 0)
-    {
-        inserirInicio(elemento);
-    }
-    else if (posicao == tam)
-    {
-        inserirFim(elemento);
-    }
-    else
-    {
-
-        // Caminha ate a posicao anterior a insercao
-        Celula *i = primeiro;
-        int j;
-
-        for (j = 0; j < posicao; j++, i = i->prox)
-            ;
-        Celula *nova = novaCelula(elemento);
-        nova->prox = i->prox;
-        i->prox = nova;
-        nova = i = NULL;
-    }
+// Remove início
+Show* removerInicio(Lista* lista) {
+    if (lista->n == 0) return NULL;
+    Show* removido = lista->shows[0];
+    for (int i = 0; i < lista->n - 1; i++)
+        lista->shows[i] = lista->shows[i + 1];
+    lista->n--;
+    return removido;
 }
 
-// Remover elemento do inicio da lista
-Show removerInicio()
-{
-
-    if (primeiro == ultimo)
-    {
-        printf("Erro ao remover (lista vazia)!\n");
-        exit(1);
-    }
-    Celula *tmp = primeiro->prox;
-    Show elemento = tmp->elemento;
-    primeiro->prox = tmp->prox;
-    if (tmp == ultimo)
-    ultimo = primeiro;
-    free(tmp);
-    return elemento;
+// Remove fim
+Show* removerFim(Lista* lista) {
+    if (lista->n == 0) return NULL;
+    return lista->shows[--lista->n];
 }
 
-// Remover elemento do final da lista
-Show removerFim()
-{
-
-    if (primeiro == ultimo)
-    {
-        printf("Erro ao remover (lista vazia)!\n");
-        exit(1);
-    }
-    // Caminado até a penúltima célula
-    Celula *i;
-    for (i = primeiro; i->prox != ultimo; i = i->prox)
-        ;
-
-    Show elemento = ultimo->elemento;
-    ultimo = i;
-    free(ultimo->prox);
-    i = ultimo->prox = NULL;
-    return elemento;
+// Remove de qualquer posição
+Show* remover(Lista* lista, int pos) {
+    if (lista->n == 0 || pos < 0 || pos >= lista->n) return NULL;
+    Show* removido = lista->shows[pos];
+    for (int i = pos; i < lista->n - 1; i++)
+        lista->shows[i] = lista->shows[i + 1];
+    lista->n--;
+    return removido;
 }
 
-// Remover elemento de uma posição específica
-Show remover(int posicao)
-{
-
-    Show resposta;
-    int tam = tamanho();
-
-    if (primeiro == ultimo)
-    {
-        printf("Erro ao remover (lista vazia)!\n");
-        exit(1);
-    }
-    else if (posicao < 0 || posicao >= tam)
-    {
-        printf("Erro ao remover (posicao invalida)!\n");
-        exit(1);
-    }
-    else if (posicao == 0)
-    {
-        resposta = removerInicio();
-    }
-    else if (posicao == tam - 1)
-    {
-        resposta = removerFim();
-    }
-    else
-    {
-        // Caminhar até a célula anterior à inserção
-        Celula *i = primeiro;
-        int j;
-
-        for (j = 0; j < posicao; j++, i = i->prox)
-            ;
-        Celula *nova = i->prox;
-        resposta = nova->elemento;
-        i->prox = nova->prox;
-        nova->prox = NULL;
-        free(nova);
-        i = nova = NULL;
-
-        return resposta;
+// Imprime a lista
+void imprimirLista(Lista* lista) {
+    for(int i = 0; i < lista->n;i++) {
+        print_show(lista->shows[i]);
     }
 }
 
@@ -359,20 +269,12 @@ Show* buscarID(const char* id) {
     return NULL;
 }
 
-// Mostra a lista
-void mostrar()
-{
-    Celula *i;
-    for (i = primeiro->prox; i != NULL; i = i->prox)
-    {
-        print_show(&(i->elemento));
-    }
-}
 // Main
 int main()
 {
     read_csv("/tmp/disneyplus.csv");
-    start(); // inicializa a lista
+    
+    Lista* showLista = criarLista(10);
 
     // Leitura
     char entrada[256];
@@ -383,7 +285,7 @@ int main()
         Show *selecionado = buscarID(entrada);
         if (selecionado)
         {
-            inserirInicio(*selecionado);
+            inserirInicio(showLista, selecionado);
         }
         fgets(entrada, sizeof(entrada), stdin);
         entrada[strcspn(entrada, "\n")] = 0;
@@ -391,65 +293,50 @@ int main()
 
     int N;
     scanf("%d\n", &N);
-    char id[100];
-    char operacao[4];
-    int posicao;
-
-    for (int i = 0; i < N; i++)
-    {
-        scanf("%s", &operacao);
-        if (operacao[0] == 'I')
-        {
-            if (operacao[1] == 'I')
-            {
-                scanf(" %[^\n]", id);
-                removeN_R(id);
-                Show *resultado = buscarID(id);
-                if (resultado)
-                    inserirInicio(*resultado);
-            }
-            else if (operacao[1] == 'F')
-            {
-                scanf(" %[^\n]", id);
-                removeN_R(id);
-                Show *resultado = buscarID(id);
-                if (resultado != NULL)
-                {
-                    inserirFim(*resultado);
-                }
-            }
-
-            else if (operacao[1] == '*')
-            {
-                scanf("%d", &posicao);
-                scanf(" %[^\n]", id);
-                removeN_R(id);
-                Show *resultado = buscarID(id);
-                if (resultado != NULL)
-                {
-                    inserir(*resultado, posicao);
-                }
+    char linha[100];
+    for (int i = 0; i < N; i++) {
+        fgets(linha, sizeof(linha), stdin);
+        linha[strcspn(linha, "\n")] = 0;
+        char cmd[10], show_id[100];
+        int pos;
+        if (sscanf(linha, "%s", cmd) == 1) {
+            //inserir inicio
+            if (strcmp(cmd, "II") == 0) {
+                sscanf(linha, "%*s %s", show_id);
+                Show* s = buscarNoCatalogo(show_id);
+                if (s) inserirInicio(showLista, s);
+            } 
+            //inserir fim
+            else if (strcmp(cmd, "IF") == 0) {
+                sscanf(linha, "%*s %s", show_id);
+                Show* s = buscarNoCatalogo(show_id);
+                if (s) inserirFim(showLista, s);
+            } 
+            //inserir em qualquer posição
+            else if (strcmp(cmd, "I*") == 0) {
+                sscanf(linha, "%*s %d %s", &pos, show_id);
+                Show* s = buscarNoCatalogo(show_id);
+                if (s) inserir(showLista, s, pos);
+            } 
+            //remover inicio
+            else if (strcmp(cmd, "RI") == 0) {
+                Show* s = removerInicio(showLista);
+                if (s) printf("(R) %s\n", s->title);
+            } 
+            //remover fim
+            else if (strcmp(cmd, "RF") == 0) {
+                Show* s = removerFim(showLista);
+                if (s) printf("(R) %s\n", s->title);
+            } 
+            //remover em qualquer posição
+            else if (strcmp(cmd, "R*") == 0) {
+                sscanf(linha, "%*s %d", &pos);
+                Show* s = remover(showLista, pos);
+                if (s) printf("(R) %s\n", s->title);
             }
         }
-            else if(operacao[0] == 'R') {
-                if(operacao[1] == 'I')
-                {
-                    Show show = removerInicio();
-                    printf("(R) %s\n", show.title);
-                }
-                else if(operacao[1] == 'F')
-                {
-                    Show show = removerFim();
-                    printf("(R) %s\n", show.title);
-                }
-                else if(operacao[1] == '*')
-                {
-                    scanf("%d", &posicao);
-                    Show show = remover(posicao);
-                    printf("(R) %s\n", show.title);
-                }
-            }
     }
+
     
       mostrar();
       return 0; 
