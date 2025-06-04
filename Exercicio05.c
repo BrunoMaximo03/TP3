@@ -3,28 +3,34 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
-#include <errno.h>
 
+#define MAX_LINE 1024
 #define MAX_SHOWS 10000
-#define MAX_FIELD 512
-#define MAX_LIST 50
+#define MAX_ITEMS 50
 
-typedef struct {
-    char show_id[MAX_FIELD];
-    char type[MAX_FIELD];
-    char title[MAX_FIELD];
-    char director[MAX_LIST][MAX_FIELD];
-    int director_count;
-    char cast[MAX_LIST][MAX_FIELD];
-    int cast_count;
-    char country[MAX_LIST][MAX_FIELD];
-    int country_count;
-    char date[MAX_FIELD];
+// Struct Date
+typedef struct Date {
+    char mes[20];
+    int dia;
+    int ano;
+} Date;
+
+// Struct show
+typedef struct Show {
+    char* show_id;
+    char* type;
+    char* title;
+    char* director;
+    char** cast;
+    int castSize;
+    char* country;
+    Date date_added;
     int release_year;
-    char rating[MAX_FIELD];
-    char duration[MAX_FIELD];
-    char listen_in[MAX_LIST][MAX_FIELD];
-    int listen_count;
+    char* rating;
+    char* duration;
+    char** listed_in;
+    int listedInSize;
+    char* description;
 } Show;
 
 // Struct Lista Sequencial com alocação dinâmica
@@ -34,152 +40,187 @@ typedef struct Lista {
     int n;  
 } Lista;
 
-Show shows[MAX_SHOWS];
-int show_count = 0;
+Show* catalogo[MAX_SHOWS];
+int totalShows = 0;
 
-void removeN_R(char* texto) {
-    int tamanho = strlen(texto);
-    if (tamanho > 0 && (texto[tamanho - 1] == '\n' || texto[tamanho - 1] == '\r'))
-        texto[tamanho - 1] = '\0';
+// Remove espaços em branco da string
+char* limparString(char* str) {
+    if (!str) return strdup("NaN");
+    while (isspace(*str)) str++;
+    char* end = str + strlen(str) - 1;
+    while (end > str && isspace(*end)) end--;
+    *(end + 1) = '\0';
+    return strdup(str);
 }
 
-void split_list(char* entrada, char lista[MAX_LIST][MAX_FIELD], int* total_itens) {
-    *total_itens = 0;
-    char* parte = strtok(entrada, ",");
-    while (parte != NULL && *total_itens < MAX_LIST) {
-        while (*parte == ' ') parte++;
-        strcpy(lista[*total_itens], parte);
-        (*total_itens)++;
-        parte = strtok(NULL, ",");
+// Remove aspas de uma string
+char* removeAspas(char* str) {
+    if (!str) return NULL;
+    char* result = malloc(strlen(str) + 1);
+    int j = 0;
+    for (int i = 0; str[i]; i++) {
+        if (str[i] != '"') {
+            result[j++] = str[i];
+        }
     }
+    result[j] = '\0';
+    return result;
 }
 
-void sort_list(char lista[MAX_LIST][MAX_FIELD], int quantidade) {
-    for (int i = 0; i < quantidade - 1; i++) {
-        int menor = i;
-        for (int j = i + 1; j < quantidade; j++) {
-            if (strcmp(lista[j], lista[menor]) < 0) {
-                menor = j;
+// Junta funções para remover aspas e espaços vazios
+char* removeAspasEspacoVazio(char* field) {
+    if (!field || strlen(field) == 0) return strdup("NaN");
+    char* noQuotes = removeAspas(field);
+    char* result = limparString(noQuotes);
+    free(noQuotes);
+    return result;
+}
+
+// Trata listas separadas por vírgula  e ordena cast ou listed_in
+char** trataLista(char* str, int* size) {
+    char** items = malloc(MAX_ITEMS * sizeof(char*));
+    *size = 0;
+
+    if (!str || strlen(str) == 0) {
+        items[(*size)++] = strdup("NaN");
+        return items;
+    }
+
+    char* clear = removeAspas(str);
+    char* token = strtok(clear, ",");
+    while (token != NULL && *size < MAX_ITEMS) {
+        char* item = removeAspasEspacoVazio(token);
+        items[(*size)++] = item;
+        token = strtok(NULL, ",");
+    }
+
+    free(clear);
+
+    //Bubble Sort
+    for (int i = 0; i < *size - 1; i++) {
+        for (int j = 0; j < *size - i - 1; j++) {
+            if (strcasecmp(items[j], items[j + 1]) > 0) {
+                char* temp = items[j];
+                items[j] = items[j + 1];
+                items[j + 1] = temp;
             }
         }
-        if (menor != i) {
-            char temp[MAX_FIELD];
-            strcpy(temp, lista[i]);
-            strcpy(lista[i], lista[menor]);
-            strcpy(lista[menor], temp);
-        }
     }
+
+    if (*size == 0) {
+        items[(*size)++] = strdup("NaN");
+    }
+    return items;
 }
 
-void print_show(const Show* registro) {
-    printf("=> %s ## %s ## %s ## ", registro->show_id, registro->title, registro->type);
+// Função para separar os campos de uma linha respeitando aspas duplas
+int separarCampos(char* linha, char* campos[], int maxCampos) {
+    int i = 0;
+    char* ptr = linha;
+    while (*ptr && i < maxCampos) {
+        if (*ptr == '"') {
+            ptr++;
+            char* start = ptr;
+            while (*ptr && !(*ptr == '"' && (*(ptr + 1) == ',' || *(ptr + 1) == '\0'))) {
+                ptr++;
+            }
+            int len = ptr - start;
+            campos[i] = malloc(len + 1);
+            strncpy(campos[i], start, len);
+            campos[i][len] = '\0';
+            if (*ptr == '"') ptr++;
+            if (*ptr == ',') ptr++;
+        } else {
+            char* start = ptr;
+            while (*ptr && *ptr != ',') ptr++;
+            int len = ptr - start;
+            campos[i] = malloc(len + 1);
+            strncpy(campos[i], start, len);
+            campos[i][len] = '\0';
+            if (*ptr == ',') ptr++;
+        }
+        i++;
+    }
+    return i;
+}
 
-    for (int i = 0; i < registro->director_count; i++) {
-        printf("%s", registro->director[i]);
-        if (i < registro->director_count - 1) printf(", ");
+// Preenche o catálogo
+void readCSV() {
+    FILE* file = fopen("/tmp/disneyplus.csv", "r");
+    if (file == NULL) {
+        printf("Erro ao abrir o arquivo!\n");
+        return;
     }
 
-    printf(" ## [");
-    for (int i = 0; i < registro->cast_count; i++) {
-        printf("%s", registro->cast[i]);
-        if (i < registro->cast_count - 1) printf(", ");
+    char linha[MAX_LINE];
+    fgets(linha, MAX_LINE, file); // Ignora o cabeçalho
+
+    while (fgets(linha, MAX_LINE, file)) {
+        linha[strcspn(linha, "\n")] = 0; // Remove o caractere de nova linha
+
+        char* campos[15];
+        int fieldCount = separarCampos(linha, campos, 15);
+
+        Show* novoShow = malloc(sizeof(Show));
+        novoShow->show_id = removeAspasEspacoVazio(campos[0]);
+        novoShow->type = removeAspasEspacoVazio(campos[1]);
+        novoShow->title = removeAspasEspacoVazio(campos[2]);
+        novoShow->director = removeAspasEspacoVazio(campos[3]);
+        novoShow->cast = trataLista(campos[4], &novoShow->castSize);
+        novoShow->country = removeAspasEspacoVazio(campos[5]);
+
+        // Trata campo de data
+        char* dateStr = removeAspasEspacoVazio(campos[6]);
+        if (strcmp(dateStr, "NaN") != 0) {
+            char* parte = strtok(dateStr, " ");
+            strcpy(novoShow->date_added.mes, parte ? parte : "NaN");
+            parte = strtok(NULL, ",");
+            novoShow->date_added.dia = parte ? atoi(parte) : -1;
+            parte = strtok(NULL, "");
+            novoShow->date_added.ano = parte ? atoi(parte) : -1;
+        } else {
+            strcpy(novoShow->date_added.mes, "NaN");
+            novoShow->date_added.dia = -1;
+            novoShow->date_added.ano = -1;
+        }
+        free(dateStr);
+
+        novoShow->release_year = (fieldCount > 7 && strlen(campos[7]) > 0) ? atoi(campos[7]) : -1;
+        novoShow->rating = removeAspasEspacoVazio(campos[8]);
+        novoShow->duration = removeAspasEspacoVazio(campos[9]);
+        novoShow->listed_in = trataLista(campos[10], &novoShow->listedInSize);
+        novoShow->description = removeAspasEspacoVazio(campos[11]);
+
+        for (int i = 0; i < fieldCount; i++) free(campos[i]);
+        catalogo[totalShows++] = novoShow;
     }
-    printf("] ## ");
 
-    for (int i = 0; i < registro->country_count; i++) {
-        printf("%s", registro->country[i]);
-        if (i < registro->country_count - 1) printf(", ");
+    fclose(file);
+}
+
+// Função que imprime o catálogo
+void imprimir(Show* s) {
+    // Imprime cast sem espaço 
+    printf("=> %s ## %s ## %s ## %s ## [", s->show_id, s->title, s->type, s->director);
+    for (int i = 0; i < s->castSize; i++) {
+        printf("%s", s->cast[i]);
+        if (i < s->castSize - 1) printf(", ");
     }
-
-    printf(" ## %s ## %d ## %s ## %s ## [", 
-        registro->date[0] ? registro->date : "March 1, 1900",
-        registro->release_year != -1 ? registro->release_year : 0,
-        registro->rating,
-        registro->duration);
-
-    for (int i = 0; i < registro->listen_count; i++) {
-        printf("%s", registro->listen_in[i]);
-        if (i < registro->listen_count - 1) printf(", ");
+    printf("] ## %s ## %s %01d, %d ## %d ## %s ## %s ## [", s->country, s->date_added.mes, s->date_added.dia,
+           s->date_added.ano, s->release_year, s->rating, s->duration);
+    // Imprime listed_in sem espaço 
+    for (int i = 0; i < s->listedInSize; i++) {
+        printf("%s", s->listed_in[i]);
+        if (i < s->listedInSize - 1) printf(", ");
     }
-
     printf("] ##\n");
 }
 
-void read_csv(const char* caminho) {
-    FILE* arquivo = fopen(caminho, "r");
-    if (!arquivo) {
-        perror("Erro ao abrir o arquivo");
-        exit(1);
-    }
-
-    char linha[4000];
-    fgets(linha, sizeof(linha), arquivo); 
-
-    while (fgets(linha, sizeof(linha), arquivo) && show_count < MAX_SHOWS) {
-        char* campos[13] = { NULL };
-        int indice_campo = 0;
-        int entre_aspas = 0;
-        char* inicio_token = linha;
-
-        for (char* ptr = linha; *ptr && indice_campo < 13; ptr++) {
-            if (*ptr == '"') {
-                entre_aspas = !entre_aspas;
-                memmove(ptr, ptr + 1, strlen(ptr));
-                ptr--;
-            } else if (*ptr == ',' && !entre_aspas) {
-                *ptr = '\0';
-                campos[indice_campo++] = inicio_token;
-                inicio_token = ptr + 1;
-            }
-        }
-
-        if (indice_campo < 13) {
-            campos[indice_campo++] = inicio_token;
-        }
-
-        while (indice_campo < 13) {
-            campos[indice_campo++] = "";
-        }
-
-        Show* registro = &shows[show_count];
-        removeN_R(campos[11]);
-
-        strcpy(registro->show_id, strlen(campos[0]) > 0 ? campos[0] : "NaN");
-        strcpy(registro->type, strlen(campos[1]) > 0 ? campos[1] : "NaN");
-        strcpy(registro->title, strlen(campos[2]) > 0 ? campos[2] : "NaN");
-
-        split_list(strlen(campos[3]) > 0 ? campos[3] : "NaN", registro->director, &registro->director_count);
-        //sort_list(registro->director, registro->director_count);
-        //Saída do verde não está ordenada
-
-        split_list(strlen(campos[4]) > 0 ? campos[4] : "NaN", registro->cast, &registro->cast_count);
-        sort_list(registro->cast, registro->cast_count);
-
-        split_list(strlen(campos[5]) > 0 ? campos[5] : "NaN", registro->country, &registro->country_count);
-        //sort_list(registro->country, registro->country_count);
-        //Saída do verde não está ordenada
-        strcpy(registro->date, strlen(campos[6]) > 0 ? campos[6] : "March 1, 1900");
-        registro->release_year = strlen(campos[7]) > 0 ? atoi(campos[7]) : -1;
-
-        strcpy(registro->rating, strlen(campos[8]) > 0 ? campos[8] : "NaN");
-        strcpy(registro->duration, strlen(campos[9]) > 0 ? campos[9] : "NaN");
-
-        split_list(strlen(campos[10]) > 0 ? campos[10] : "NaN", registro->listen_in, &registro->listen_count);
-        sort_list(registro->listen_in, registro->listen_count);
-
-        show_count++;
-    }
-
-    fclose(arquivo);
+// Verifica se a entrada é FIM
+bool isFim(char* str) {
+    return strcasecmp(str, "FIM") == 0;
 }
 
-// Função para verificar se é FIM
-bool isFim(char *str)
-{
-    return (strcasecmp(str, "FIM") == 0);
-}
-
-// Retorna o tamanho da lista
 // Métodos da Lista Sequencial dinâmica
 Lista* criarLista(int tam) {
     Lista* lista = (Lista*)malloc(sizeof(Lista));
@@ -252,40 +293,38 @@ Show* remover(Lista* lista, int pos) {
     return removido;
 }
 
-// Imprime a lista
+// Imprime a lista sequencial
 void imprimirLista(Lista* lista) {
-    for(int i = 0; i < lista->n;i++) {
-        print_show(lista->shows[i]);
+    for (int i = 0; i < lista->n; i++) {
+        imprimir(lista->shows[i]);
     }
 }
 
-// Busca no catálogo por show_id
-Show* buscarID(const char* id) {
-    for (int i = 0; i < show_count; i++) {
-        if (strcmp(shows[i].show_id, id) == 0) {
-            return &shows[i];
+// Procura show por show_id no catálogo
+Show* buscarNoCatalogo(char* show_id) {
+    for (int i = 0; i < totalShows; i++) {
+        if (strcasecmp(catalogo[i]->show_id, show_id) == 0) {
+            return catalogo[i];
         }
     }
     return NULL;
 }
 
 // Main
-int main()
-{
-    read_csv("/tmp/disneyplus.csv");
-    
-    Lista* showLista = criarLista(10);
+int main() {
+    readCSV();
 
-    // Leitura
+    // Lista para armazenar os Shows
+    Lista* showLista = criarLista(10); 
+
+    //inserir shows pelo show_id
     char entrada[256];
     fgets(entrada, sizeof(entrada), stdin);
     entrada[strcspn(entrada, "\n")] = 0;
-    while (!isFim(entrada))
-    {
-        Show *selecionado = buscarID(entrada);
-        if (selecionado)
-        {
-            inserirInicio(showLista, selecionado);
+    while (!isFim(entrada)) {
+        Show* selecionado = buscarNoCatalogo(entrada);
+        if (selecionado) {
+            inserirFim(showLista, selecionado);
         }
         fgets(entrada, sizeof(entrada), stdin);
         entrada[strcspn(entrada, "\n")] = 0;
@@ -298,52 +337,66 @@ int main()
         fgets(linha, sizeof(linha), stdin);
         linha[strcspn(linha, "\n")] = 0;
         char cmd[10], show_id[100];
-        int posicao;
+        int pos;
         if (sscanf(linha, "%s", cmd) == 1) {
             //inserir inicio
             if (strcmp(cmd, "II") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* show = buscarID(show_id);
-                if (show) inserirInicio(showLista, show);
+                Show* s = buscarNoCatalogo(show_id);
+                if (s) inserirInicio(showLista, s);
             } 
             //inserir fim
             else if (strcmp(cmd, "IF") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* show = buscarID(show_id);
-                if (show) inserirFim(showLista, show);
+                Show* s = buscarNoCatalogo(show_id);
+                if (s) inserirFim(showLista, s);
             } 
             //inserir em qualquer posição
             else if (strcmp(cmd, "I*") == 0) {
-                sscanf(linha, "%*s %d %s", &posicao, show_id);
-                Show* show = buscarID(show_id);
-                if (show) inserir(showLista, show, posicao);
+                sscanf(linha, "%*s %d %s", &pos, show_id);
+                Show* s = buscarNoCatalogo(show_id);
+                if (s) inserir(showLista, s, pos);
             } 
             //remover inicio
             else if (strcmp(cmd, "RI") == 0) {
-                Show* show = removerInicio(showLista);
-                if (show) printf("(R) %s\n", show->title);
+                Show* s = removerInicio(showLista);
+                if (s) printf("(R) %s\n", s->title);
             } 
             //remover fim
             else if (strcmp(cmd, "RF") == 0) {
-                Show* show = removerFim(showLista);
-                if (show) printf("(R) %s\n", show->title);
+                Show* s = removerFim(showLista);
+                if (s) printf("(R) %s\n", s->title);
             } 
             //remover em qualquer posição
             else if (strcmp(cmd, "R*") == 0) {
-                sscanf(linha, "%*s %d", &posicao);
-                Show* show = remover(showLista, posicao);
-                if (show) printf("(R) %s\n", show->title);
+                sscanf(linha, "%*s %d", &pos);
+                Show* s = remover(showLista, pos);
+                if (s) printf("(R) %s\n", s->title);
             }
         }
     }
 
-    
-      imprimirLista(showLista);
-      return 0; 
- }
+    imprimirLista(showLista);
 
+    // Libera toda a memória alocada
+    for (int i = 0; i < totalShows; i++) {
+        Show* s = catalogo[i];
+        free(s->show_id);
+        free(s->type);
+        free(s->title);
+        free(s->director);
+        for (int j = 0; j < s->castSize; j++) free(s->cast[j]);
+        free(s->cast);
+        free(s->country);
+        free(s->rating);
+        free(s->duration);
+        for (int j = 0; j < s->listedInSize; j++) free(s->listed_in[j]);
+        free(s->listed_in);
+        free(s->description);
+        free(s);
+    }
+    free(showLista->shows);
+    free(showLista);
 
-
- 
-
-
+    return 0;
+}
