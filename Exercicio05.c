@@ -298,41 +298,41 @@ int main()
         fgets(linha, sizeof(linha), stdin);
         linha[strcspn(linha, "\n")] = 0;
         char cmd[10], show_id[100];
-        int pos;
+        int posicao;
         if (sscanf(linha, "%s", cmd) == 1) {
             //inserir inicio
             if (strcmp(cmd, "II") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* s = buscarNoCatalogo(show_id);
-                if (s) inserirInicio(showLista, s);
+                Show* show = buscarNoCatalogo(show_id);
+                if (show) inserirInicio(showLista, show);
             } 
             //inserir fim
             else if (strcmp(cmd, "IF") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* s = buscarNoCatalogo(show_id);
-                if (s) inserirFim(showLista, s);
+                Show* show = buscarNoCatalogo(show_id);
+                if (show) inserirFim(showLista, show);
             } 
             //inserir em qualquer posição
             else if (strcmp(cmd, "I*") == 0) {
-                sscanf(linha, "%*s %d %s", &pos, show_id);
-                Show* s = buscarNoCatalogo(show_id);
-                if (s) inserir(showLista, s, pos);
+                sscanf(linha, "%*s %d %s", &posicao, show_id);
+                Show* show = buscarNoCatalogo(show_id);
+                if (show) inserir(showLista, show, posicao);
             } 
             //remover inicio
             else if (strcmp(cmd, "RI") == 0) {
-                Show* s = removerInicio(showLista);
-                if (s) printf("(R) %s\n", s->title);
+                Show* show = removerInicio(showLista);
+                if (show) printf("(R) %s\n", show->title);
             } 
             //remover fim
             else if (strcmp(cmd, "RF") == 0) {
-                Show* s = removerFim(showLista);
-                if (s) printf("(R) %s\n", s->title);
+                Show* show = removerFim(showLista);
+                if (show) printf("(R) %s\n", show->title);
             } 
             //remover em qualquer posição
             else if (strcmp(cmd, "R*") == 0) {
-                sscanf(linha, "%*s %d", &pos);
-                Show* s = remover(showLista, pos);
-                if (s) printf("(R) %s\n", s->title);
+                sscanf(linha, "%*s %d", &posicao);
+                Show* show = remover(showLista, posicao);
+                if (show) printf("(R) %s\n", show->title);
             }
         }
     }
