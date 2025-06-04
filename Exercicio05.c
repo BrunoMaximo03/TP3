@@ -303,19 +303,19 @@ int main()
             //inserir inicio
             if (strcmp(cmd, "II") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* show = buscarNoCatalogo(show_id);
+                Show* show = buscarID(show_id);
                 if (show) inserirInicio(showLista, show);
             } 
             //inserir fim
             else if (strcmp(cmd, "IF") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* show = buscarNoCatalogo(show_id);
+                Show* show = buscarID(show_id);
                 if (show) inserirFim(showLista, show);
             } 
             //inserir em qualquer posição
             else if (strcmp(cmd, "I*") == 0) {
                 sscanf(linha, "%*s %d %s", &posicao, show_id);
-                Show* show = buscarNoCatalogo(show_id);
+                Show* show = buscarID(show_id);
                 if (show) inserir(showLista, show, posicao);
             } 
             //remover inicio
@@ -338,7 +338,7 @@ int main()
     }
 
     
-      mostrar();
+      imprimirLista(showLista);
       return 0; 
  }
 
