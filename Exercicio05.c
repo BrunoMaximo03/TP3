@@ -256,14 +256,14 @@ void inserirFim(Lista* lista, Show* show) {
 }
 
 // Insere em qualquer posição
-void inserir(Lista* lista, Show* show, int pos) {
+void inserir(Lista* lista, Show* show, int posicao) {
     if (lista->n >= lista->tam) {
         redimensionarLista(lista);
     }
-    if (pos < 0 || pos > lista->n) return;
-    for (int i = lista->n; i > pos; i--)
+    if (posicao < 0 || posicao > lista->n) return;
+    for (int i = lista->n; i > posicao; i--)
         lista->shows[i] = lista->shows[i - 1];
-    lista->shows[pos] = show;
+    lista->shows[posicao] = show;
     lista->n++;
 }
 
@@ -284,10 +284,10 @@ Show* removerFim(Lista* lista) {
 }
 
 // Remove de qualquer posição
-Show* remover(Lista* lista, int pos) {
-    if (lista->n == 0 || pos < 0 || pos >= lista->n) return NULL;
-    Show* removido = lista->shows[pos];
-    for (int i = pos; i < lista->n - 1; i++)
+Show* remover(Lista* lista, int posicao) {
+    if (lista->n == 0 || posicao < 0 || posicao >= lista->n) return NULL;
+    Show* removido = lista->shows[posicao];
+    for (int i = posicao; i < lista->n - 1; i++)
         lista->shows[i] = lista->shows[i + 1];
     lista->n--;
     return removido;
@@ -337,41 +337,41 @@ int main() {
         fgets(linha, sizeof(linha), stdin);
         linha[strcspn(linha, "\n")] = 0;
         char cmd[10], show_id[100];
-        int pos;
+        int posicao;
         if (sscanf(linha, "%s", cmd) == 1) {
             //inserir inicio
             if (strcmp(cmd, "II") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* s = buscarNoCatalogo(show_id);
-                if (s) inserirInicio(showLista, s);
+                Show* show = buscarNoCatalogo(show_id);
+                if (show) inserirInicio(showLista, show);
             } 
             //inserir fim
             else if (strcmp(cmd, "IF") == 0) {
                 sscanf(linha, "%*s %s", show_id);
-                Show* s = buscarNoCatalogo(show_id);
-                if (s) inserirFim(showLista, s);
+                Show* show = buscarNoCatalogo(show_id);
+                if (show) inserirFim(showLista, show);
             } 
             //inserir em qualquer posição
             else if (strcmp(cmd, "I*") == 0) {
-                sscanf(linha, "%*s %d %s", &pos, show_id);
-                Show* s = buscarNoCatalogo(show_id);
-                if (s) inserir(showLista, s, pos);
+                sscanf(linha, "%*s %d %s", &posicao, show_id);
+                Show* show = buscarNoCatalogo(show_id);
+                if (show) inserir(showLista, show, posicao);
             } 
             //remover inicio
             else if (strcmp(cmd, "RI") == 0) {
-                Show* s = removerInicio(showLista);
-                if (s) printf("(R) %s\n", s->title);
+                Show* show = removerInicio(showLista);
+                if (show) printf("(R) %s\n", show->title);
             } 
             //remover fim
             else if (strcmp(cmd, "RF") == 0) {
-                Show* s = removerFim(showLista);
-                if (s) printf("(R) %s\n", s->title);
+                Show* show = removerFim(showLista);
+                if (show) printf("(R) %s\n", show->title);
             } 
             //remover em qualquer posição
             else if (strcmp(cmd, "R*") == 0) {
-                sscanf(linha, "%*s %d", &pos);
-                Show* s = remover(showLista, pos);
-                if (s) printf("(R) %s\n", s->title);
+                sscanf(linha, "%*s %d", &posicao);
+                Show* show = remover(showLista, posicao);
+                if (show) printf("(R) %s\n", show->title);
             }
         }
     }
@@ -380,20 +380,20 @@ int main() {
 
     // Libera toda a memória alocada
     for (int i = 0; i < totalShows; i++) {
-        Show* s = catalogo[i];
-        free(s->show_id);
-        free(s->type);
-        free(s->title);
-        free(s->director);
-        for (int j = 0; j < s->castSize; j++) free(s->cast[j]);
-        free(s->cast);
-        free(s->country);
-        free(s->rating);
-        free(s->duration);
-        for (int j = 0; j < s->listedInSize; j++) free(s->listed_in[j]);
-        free(s->listed_in);
-        free(s->description);
-        free(s);
+        Show* show = catalogo[i];
+        free(show->show_id);
+        free(show->type);
+        free(show->title);
+        free(show->director);
+        for (int j = 0; j < show->castSize; j++) free(show->cast[j]);
+        free(show->cast);
+        free(show->country);
+        free(show->rating);
+        free(show->duration);
+        for (int j = 0; j < show->listedInSize; j++) free(show->listed_in[j]);
+        free(show->listed_in);
+        free(show->description);
+        free(show);
     }
     free(showLista->shows);
     free(showLista);
