@@ -120,13 +120,13 @@ class Matriz {
     // Mostra diagonal principal
     public void mostrarDiagonalPrincipal() {
         if (isQuadrada()) {
-            Celula c = inicio;
+            Celula novCelula = inicio;
             for (int i = 0; i < linha; i++) {
-                System.out.print(c.elemento);
+                System.out.print(novCelula.elemento);
                 if (i < linha - 1)
                     System.out.print(" ");
-                if (c.inf != null && c.dir != null)
-                    c = c.inf.dir;
+                if (novCelula.inf != null && novCelula.dir != null)
+                    novCelula = novCelula.inf.dir;
             }
             System.out.println();
         }
